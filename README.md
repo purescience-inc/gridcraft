@@ -1,3 +1,21 @@
+## The Pure edition (this fork)
+
+This is Pure Science's fork of [GridCraft](https://github.com/storytold/gridcraft), used as **PureSheets (Craft)** inside [PureDesktop](https://www.puredesktop.ai). It follows upstream's `v0.19.1` release. The branch `pure` holds our changes; upstream's own branches are left as they are.
+
+Everything we change sits behind one cargo feature, `pure`, which is off by default. Without it this tree builds upstream's GridCraft, unchanged. Our code lives in `crates/ui-egui/src/pure.rs`, and upstream files are touched only by short `if crate::pure::ON { … }` guards, so new upstream releases merge with small conflicts.
+
+With the feature on:
+- The app takes PureDesktop's name and its plain, readable look: the Paper palette, 3px corners, one dark blue for what acts, a flat ribbon, and whole type sizes.
+- Dialogs have a white header with the title at 14px, room inside, underline tabs and a ruled footer.
+- Community and promotion links, the account control, update checks, and integrations that need an outside account are hidden.
+- Share, save, export and unsaved-changes go to the host page that embeds the app.
+
+Build the web version with the feature: `trunk build --release --features pure` (in `apps/gridcraft-web`), or `CRAFT_WEB_FEATURES=pure packaging/web/package.sh`. Release builds of the Pure edition are attached to this repository's `pure-<commit>` releases.
+
+The licence is unchanged: MIT or Apache-2.0, at your option (see `LICENSE-MIT`, `LICENSE-APACHE` and `NOTICE`). © the GridCraft contributors; the Pure edition changes © Pure Science, under the same terms.
+
+---
+
 <p align="center">
   <a href="https://getartcraft.com/">
     <picture>
