@@ -18,12 +18,14 @@ use serde_json::{Value as Json, json};
 use crate::SheetApp;
 use crate::i18n::{self, Language};
 use crate::icons::{self, Icon};
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 mod options;
 mod print;
 
-use options::{options, platform};
+use options::options;
+pub(crate) use options::platform;
 use print::print;
 
 /// Width of the navigation column.
@@ -79,6 +81,7 @@ impl Page {
             Page::Print => "Print",
             Page::Export => "Export",
             Page::Options => "Options",
+            Page::Account if crate::pure::ON => "About",
             Page::Account => "Account",
         }
     }
@@ -161,42 +164,53 @@ struct Outcome {
 /// Draws the Backstage view in place of the ribbon, formula bar, grid and sheet tabs.
 pub fn show(app: &mut SheetApp, ui: &mut Ui) {
     let Some(mut bs) = app.backstage.take() else { return };
+    bs.page = crate::pure::backstage::page(bs.page);
     let ctx = ui.ctx().clone();
     // Esc inside a text field leaves the field; it closes the view only from outside one.
     let typing = bs.text_edit_focused;
     let t = Tokens::get(&ctx);
     let lang = app.ui.language;
     let mut out = Outcome::default();
-    let (nav_bg, nav_text, nav_sel) =
-        if t.dark { (t.accent_soft, t.text, Color32::from_white_alpha(30)) } else { (t.accent, Color32::WHITE, Color32::from_black_alpha(46)) };
+    let (nav_bg, nav_text, nav_sel) = if crate::pure::ON {
+        // Pure edition: the frame colour, text in text colour, the chosen row on the "on" fill.
+        (t.window, t.text, t.accent_soft)
+    } else if t.dark {
+        (t.accent_soft, t.text, Color32::from_white_alpha(30))
+    } else {
+        (t.accent, Color32::WHITE, Color32::from_black_alpha(46))
+    };
     egui::Panel::left("backstage_nav")
         .exact_size(NAV_W)
         .resizable(false)
         .frame(egui::Frame::NONE.fill(nav_bg).inner_margin(egui::Margin { left: 0, right: 0, top: 10, bottom: 10 }))
         .show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 0.0;
+            crate::pure::backstage::nav_edge(ui);
             if nav_item(ui, Icon::Back, lang.tr("Back"), false, nav_text, nav_sel).clicked() {
                 out.close = true;
             }
             ui.add_space(10.0);
-            for page in [Page::Home, Page::New, Page::Open] {
+            for page in crate::pure::backstage::kept([Page::Home, Page::New, Page::Open]) {
                 if nav_item(ui, page.icon(), lang.tr(page.label()), bs.page == page, nav_text, nav_sel).clicked() {
                     out.page = Some(page);
                 }
             }
-            nav_separator(ui, nav_text);
+            if !crate::pure::ON {
+                nav_separator(ui, nav_text);
+            }
             if nav_item(ui, Page::Info.icon(), lang.tr("Info"), bs.page == Page::Info, nav_text, nav_sel).clicked() {
                 out.page = Some(Page::Info);
             }
             if nav_item(ui, Icon::Save, lang.tr("Save"), false, nav_text, nav_sel).clicked() {
                 save(app, &mut out);
             }
-            for page in [Page::SaveAs, Page::Print, Page::Export] {
+            for page in crate::pure::backstage::kept([Page::SaveAs, Page::Print, Page::Export]) {
                 if nav_item(ui, page.icon(), lang.tr(page.label()), bs.page == page, nav_text, nav_sel).clicked() {
                     out.page = Some(page);
                 }
             }
-            if nav_item(ui, Icon::Close, lang.tr("Close"), false, nav_text, nav_sel).clicked() {
+            // Pure edition: closing the workbook is the host's (its tab).
+            if !crate::pure::ON && nav_item(ui, Icon::Close, lang.tr("Close"), false, nav_text, nav_sel).clicked() {
                 // A cell still being edited is part of the workbook; Close keeps the unsaved prompt.
                 if app.commit_edit(0, 0, false, false) {
                     app.run_or_alert("file.close", json!({}));
@@ -258,7 +272,8 @@ fn save(app: &mut SheetApp, out: &mut Outcome) {
     if !app.commit_edit(0, 0, false, false) {
         return;
     }
-    if app.session.active().is_some_and(|d| d.path.is_some()) {
+    // Pure edition: Save asks the host to save now, whether or not the workbook has a path here.
+    if crate::pure::ON || app.session.active().is_some_and(|d| d.path.is_some()) {
         app.run_or_alert("file.save", json!({}));
         out.close = true;
     } else {
@@ -270,17 +285,29 @@ fn save(app: &mut SheetApp, out: &mut Outcome) {
 
 /// Allocates and paints one Backstage navigation row: selected or hover fill, icon, label and button semantics. Returns the row's click response.
 fn nav_item(ui: &mut Ui, icon: Icon, label: &str, selected: bool, text: Color32, sel: Color32) -> egui::Response {
-    let (rect, resp) = ui.allocate_exact_size(vec2(NAV_W, 38.0), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(vec2(NAV_W, if crate::pure::ON { 32.0 } else { 38.0 }), Sense::click());
     resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, selected, label));
     let p = ui.painter();
-    if selected {
+    if crate::pure::ON {
+        // Pure edition: the "on" fill and a 2px accent bar for the chosen row, the hover fill.
+        let t = Tokens::get(ui.ctx());
+        if selected {
+            p.rect_filled(rect, 0.0, sel);
+            p.rect_filled(Rect::from_min_size(rect.min, vec2(2.0, rect.height())), 0.0, t.accent);
+        } else if resp.hovered() {
+            p.rect_filled(rect, 0.0, t.hover);
+        }
+    } else if selected {
         p.rect_filled(rect, 0.0, sel);
         p.rect_filled(Rect::from_min_size(rect.min, vec2(4.0, rect.height())), 0.0, text);
     } else if resp.hovered() {
         p.rect_filled(rect, 0.0, sel.gamma_multiply(0.55));
     }
-    icons::paint(p, Rect::from_center_size(pos2(rect.left() + 30.0, rect.center().y), vec2(17.0, 17.0)), icon, text);
-    p.text(pos2(rect.left() + 50.0, rect.center().y), Align2::LEFT_CENTER, label, theme::ui_font(14.0), text);
+    let size = if crate::pure::ON { crate::pure::BAR_ICON } else { 17.0 };
+    let ink = if crate::pure::ON { Tokens::get(ui.ctx()).text_dim } else { text };
+    icons::paint(p, Rect::from_center_size(pos2(rect.left() + 30.0, rect.center().y), vec2(size, size)), icon, ink);
+    let font = if crate::pure::ON && selected { theme::ui_bold(13.0) } else { theme::ui_font(if crate::pure::ON { 13.0 } else { 14.0 }) };
+    p.text(pos2(rect.left() + 50.0, rect.center().y), Align2::LEFT_CENTER, label, font, text);
     resp
 }
 
@@ -795,6 +822,9 @@ pub fn export_as(app: &mut SheetApp, fmt: &str) -> bool {
 
 /// Excel's File › Account: product information and the About window.
 fn account(app: &mut SheetApp, ui: &mut Ui) {
+    if crate::pure::ON {
+        return crate::pure::backstage::about(app, ui);
+    }
     let t = Tokens::get(ui.ctx());
     let lang = app.ui.language;
     section(ui, lang, "Product Information");

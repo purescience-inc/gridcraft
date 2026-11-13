@@ -143,6 +143,9 @@ fn stored(key: &str) -> Option<String> {
 impl eframe::App for WebShell {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let dropped = ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files));
+        // Pure edition, hosted: the host decides which workbook its tab shows, so a file dropped
+        // on the frame is not opened in place of it.
+        let dropped = if gridcraft_ui_egui::pure::ON && self.bridge.is_some() { Vec::new() } else { dropped };
         for f in dropped {
             let inbox = self.inbox.clone();
             let ctx = ctx.clone();
