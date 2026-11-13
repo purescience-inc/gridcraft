@@ -13,6 +13,10 @@ workspace = true
 name = "gridcraft-web"
 path = "src/main.rs"
 
+[features]
+# The Pure edition: see `crates/ui-egui/src/pure.rs`.
+pure = ["gridcraft-ui-egui/pure"]
+
 [dependencies]
 gridcraft-engine = { workspace = true }
 gridcraft-ui-egui = { workspace = true }

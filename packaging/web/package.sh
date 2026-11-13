@@ -17,7 +17,11 @@ if [[ "${1:-}" != "--skip-build" ]]; then
   [[ -f "$ROOT/apps/gridcraft-web/index.html" ]] || { echo "error: apps/gridcraft-web/index.html missing (the web app isn't set up yet)" >&2; exit 1; }
   # --dist/--public-url here, so the output doesn't depend on Trunk.toml (which should agree:
   # public_url = "./").
-  (cd "$ROOT/apps/gridcraft-web" && trunk build --release --dist "$SITE" --public-url ./)
+  # CRAFT_WEB_FEATURES (e.g. "pure") turns on cargo features of the web shell; unset or empty
+  # builds the default app.
+  FEATURES=()
+  [[ -n "${CRAFT_WEB_FEATURES:-}" ]] && FEATURES=(--features "$CRAFT_WEB_FEATURES")
+  (cd "$ROOT/apps/gridcraft-web" && trunk build --release ${FEATURES[@]+"${FEATURES[@]}"} --dist "$SITE" --public-url ./)
 fi
 
 [[ -f "$SITE/index.html" ]] || { echo "error: $SITE/index.html missing; run without --skip-build" >&2; exit 1; }

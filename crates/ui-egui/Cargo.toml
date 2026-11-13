@@ -8,6 +8,11 @@ description = "GridCraft egui frontend (Excel-style UI); swappable — nothing b
 [lints]
 workspace = true
 
+[features]
+# The Pure edition (PureSheets): our names, palette and sizes, and the host's Share. Off by
+# default: without it this crate is upstream's app unchanged (see `src/pure.rs`).
+pure = []
+
 [dependencies]
 # The shared capture slot (`craft_ui::capture`) comes from the one craft-libs revision every
 # craft-libs dependency uses (see the root Cargo.toml).
