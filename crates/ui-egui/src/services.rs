@@ -5,6 +5,7 @@ type OpenUrl = Box<dyn Fn(&str)>;
 type CopyHtml = Box<dyn FnMut(&str, &str) -> Result<(), String>>;
 type Download = Box<dyn Fn(&str, &[u8])>;
 type PrintPdf = Box<dyn Fn(&[u8])>;
+type HostShare = Box<dyn Fn(&str)>;
 
 /// Host services the platform shell provides (file pickers, opening URLs).
 #[derive(Default)]
@@ -44,6 +45,10 @@ pub struct Services {
     /// Web: hand PDF bytes to the browser's print flow directly (no download,
     /// no intermediate file) — opens the system print dialog on that PDF.
     pub print: Option<PrintPdf>,
+    /// Pure edition: tell the page hosting the app that the person pressed Share (the argument is
+    /// the workbook's file name). Set only while a host is connected; the Share button is drawn
+    /// only when it is set, and the host owns what sharing means.
+    pub host_share: Option<HostShare>,
 }
 
 /// Shared queue of files read asynchronously (browser file picker, drag and drop).

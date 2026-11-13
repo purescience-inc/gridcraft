@@ -20,3 +20,13 @@ pub const UPSTREAM: &str = "GridCraft";
 pub fn app_name(upstream: &str) -> &str {
     if ON && upstream == UPSTREAM { NAME } else { upstream }
 }
+
+impl crate::SheetApp {
+    /// Share: tells the host that the person pressed Share on the active workbook. Sharing is the
+    /// host's; the app shows nothing itself, and without a host this does nothing.
+    pub fn host_share(&self) {
+        let Some(share) = &self.services.host_share else { return };
+        let name = self.session.active().map(|d| d.display_title()).unwrap_or_default();
+        share(&name);
+    }
+}
