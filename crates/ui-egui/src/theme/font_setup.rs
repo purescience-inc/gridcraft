@@ -518,6 +518,7 @@ pub(super) fn font_definitions_impl(
         fonts.families.insert(FontFamily::Name(role.into()), chain);
         bound.push(role.to_string());
     }
+    crate::pure::fonts(&mut fonts);
     // Interface text (formula bar, name box, dialogs) falls back to the cell font before the
     // script faces: whatever a cell can draw, the formula bar can draw too, even where no script
     // fallback face was found (#349: macOS UI font without Hebrew, cells in Arial with it).

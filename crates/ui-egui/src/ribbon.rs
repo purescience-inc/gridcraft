@@ -7,7 +7,8 @@ use serde_json::json;
 use crate::SheetApp;
 use crate::icons::{self, Icon};
 use crate::keytips::keytip_table;
-use crate::theme::{self, Cat, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::{Cat, Tokens};
 use crate::widgets::{
     big_button, big_split_button, color_palette, icon_button, small_button, small_split_button, small_toggle_button, split_button, toggle_button,
 };
@@ -28,7 +29,7 @@ mod view;
 
 use automate::automate;
 use contextual::{chart_design, table_design};
-pub(crate) use controls::{ComboResult, editable_combo};
+pub(crate) use controls::{ComboResult, control_keytip, editable_combo};
 use controls::{act, keytip};
 use data::data;
 use formulas::formulas;
@@ -79,7 +80,7 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                         let tw = ui.painter().layout_no_wrap(label.to_string(), font.clone(), t.text).size().x;
                         let (r, resp) = ui.allocate_exact_size(vec2(tw + 22.0, 30.0), Sense::click());
                         if resp.hovered() && !active {
-                            ui.painter().rect_filled(r.shrink2(vec2(2.0, 4.0)), 5.0, t.hover);
+                            ui.painter().rect_filled(r.shrink2(vec2(2.0, 4.0)), crate::pure::radius(5.0), t.hover);
                         }
                         let color = if contextual {
                             t.accent
@@ -90,8 +91,13 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
                         };
                         ui.painter().text(r.center(), Align2::CENTER_CENTER, label, if active { theme::ui_bold(13.5) } else { font }, color);
                         if active {
-                            let ul = Rect::from_center_size(pos2(r.center().x, r.bottom() - 3.0), vec2(tw.clamp(20.0, 40.0), 3.0));
-                            ui.painter().rect_filled(ul, 1.5, t.accent);
+                            let ul = if crate::pure::ON {
+                                // Pure edition: a 2px rule the width of the label, at the tab's foot.
+                                Rect::from_min_max(pos2(r.center().x - tw / 2.0, r.bottom() - 2.0), pos2(r.center().x + tw / 2.0, r.bottom()))
+                            } else {
+                                Rect::from_center_size(pos2(r.center().x, r.bottom() - 3.0), vec2(tw.clamp(20.0, 40.0), 3.0))
+                            };
+                            ui.painter().rect_filled(ul, if crate::pure::ON { 0.0 } else { 1.5 }, t.accent);
                         }
                         if resp.clicked() {
                             if active && !collapsed {
@@ -122,8 +128,16 @@ pub fn show(app: &mut SheetApp, ui: &mut Ui) {
             let screen = ui.ctx().content_rect();
             let fits = (screen.right() - left - (left - screen.left()).max(0.0)).max(0.0);
             let card = Rect::from_min_size(ui.cursor().min, vec2(ui.available_width().min(fits), 88.0));
-            ui.painter().rect_filled(card, 10.0, t.ribbon);
-            ui.painter().rect_stroke(card, 10.0, Stroke::new(1.0, t.ribbon_border), StrokeKind::Inside);
+            if crate::pure::ON {
+                // Pure edition: a flat band the width of the window, a rule above and a line below.
+                let band = Rect::from_min_max(pos2(screen.left(), card.top()), pos2(screen.right(), card.bottom() + 6.0));
+                ui.painter().rect_filled(band, 0.0, t.ribbon);
+                ui.painter().line_segment([band.left_top(), band.right_top()], Stroke::new(1.0, t.separator));
+                ui.painter().line_segment([pos2(band.left(), band.bottom() - 0.5), pos2(band.right(), band.bottom() - 0.5)], Stroke::new(1.0, t.ribbon_border));
+            } else {
+                ui.painter().rect_filled(card, 10.0, t.ribbon);
+                ui.painter().rect_stroke(card, 10.0, Stroke::new(1.0, t.ribbon_border), StrokeKind::Inside);
+            }
             let inner = card.shrink2(vec2(10.0, 6.0));
             ui.scope_builder(egui::UiBuilder::new().max_rect(inner), |ui| {
                 // One scroll state per tab: a tab opened after scrolling another starts at its
@@ -250,7 +264,7 @@ fn scroll_arrows(ui: &mut Ui, t: &Tokens, tab: &str, scroll: egui::scroll_area::
 /// Excel's; the ribbon's tab and collapsed state are left as they were for when it closes.
 fn file_menu(app: &mut SheetApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
-    let label = egui::RichText::new(app.ui.language.tr("File")).font(theme::ui_font(13.5)).color(t.accent);
+    let label = egui::RichText::new(app.ui.language.tr("File")).font(theme::ui_font(13.5)).color(if crate::pure::ON { t.text_dim } else { t.accent });
     let file = ui.add(egui::Button::new(label).frame(false).min_size(vec2(46.0, 30.0)));
     if file.clicked() {
         app.open_backstage(crate::backstage::Page::Home);

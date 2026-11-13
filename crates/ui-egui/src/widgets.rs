@@ -7,7 +7,8 @@ use crate::SheetApp;
 pub use crate::code_editor::{Lang, code_editor};
 use crate::i18n;
 use crate::icons::{self, Icon};
-use crate::theme::{self, Cat, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::{Cat, Tokens};
 
 /// Translates a label or tooltip for the language of the frame being drawn (English if untranslated).
 /// Ribbon chrome all flows through these widgets, so translating here localises it in one place.
@@ -581,8 +582,8 @@ fn palette(ui: &mut Ui, theme_colors: &[u32; 12], none_label: &str, more_colors:
 /// Draws the modal warning/error message; OK, Enter or Esc clears it and restores editor focus when an edit exists.
 pub fn message_box(app: &mut SheetApp, ctx: &egui::Context) {
     let Some((title, msg)) = app.message.clone() else { return };
-    let title = app.ui.language.tr(&title).to_owned();
-    let msg = app.ui.language.tr_error(&msg);
+    let title = app.ui.language.tr(crate::pure::app_name(&title)).to_owned();
+    let msg = crate::pure::rename(&app.ui.language.tr_error(&msg)).into_owned();
     let mut close = false;
     egui::Modal::new(egui::Id::unique("message_box")).show(ctx, |ui| {
         ui.set_width(380.0);
@@ -620,7 +621,7 @@ pub fn toast(app: &mut SheetApp, ctx: &egui::Context) {
         app.toast = None;
         return;
     }
-    let msg = app.ui.language.tr_error(&msg);
+    let msg = crate::pure::rename(&app.ui.language.tr_error(&msg)).into_owned();
     let Some(rect) = app.grid.rect else { return };
     egui::Area::new(egui::Id::unique("toast")).fixed_pos(pos2(rect.center().x - 160.0, rect.bottom() - 48.0)).order(egui::Order::Tooltip).show(
         ctx,
@@ -661,7 +662,7 @@ pub fn notice_bar(app: &mut SheetApp, ui: &mut Ui) {
                 border,
             );
             ui.add_space(6.0);
-            ui.label(egui::RichText::new(&notice.text).font(theme::ui_font(12.5)).color(t.text));
+            ui.label(egui::RichText::new(crate::pure::rename(&notice.text)).font(theme::ui_font(12.5)).color(t.text));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if icon_button(ui, Icon::Close, t.text_dim, "Dismiss", vec2(20.0, 20.0)).clicked() {
                     dismiss = true;

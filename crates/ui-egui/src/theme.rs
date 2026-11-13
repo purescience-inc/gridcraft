@@ -205,11 +205,11 @@ const SHEET_PY_TAG: Color32 = rgb(0x1E6E4E);
 
 impl Tokens {
     pub fn light() -> Tokens {
-        Tokens::palette(false)
+        crate::pure::tokens(Tokens::palette(false))
     }
 
     pub fn dark() -> Tokens {
-        Tokens::palette(true)
+        crate::pure::tokens(Tokens::palette(true))
     }
 
     /// One palette for both modes: each colour is written once, with its light and dark values.
@@ -369,6 +369,7 @@ pub fn apply(ctx: &egui::Context, dark: bool) {
         s.text_styles.insert(egui::TextStyle::Heading, ui_bold(18.0));
         s.text_styles.insert(egui::TextStyle::Monospace, FontId::new(12.0, FontFamily::Name(MONO.into())));
     });
+    crate::pure::style(ctx);
 }
 
 /// Model colour → egui colour.

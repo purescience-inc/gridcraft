@@ -32,6 +32,9 @@ pub(super) const TITLE_CONTROL_H: f32 = if MAC { 22.0 } else { 26.0 };
 
 /// Draws the title bar: drag/maximize, AutoSave toggle, Home/Save/Undo/Redo/More, search, share, comments and theme controls, with a centered truncated title.
 pub fn title_bar(app: &mut SheetApp, ui: &mut Ui) {
+    if crate::pure::ON {
+        return crate::pure::title_bar::show(app, ui);
+    }
     let t = Tokens::get(ui.ctx());
     let ch = TITLE_CONTROL_H;
     egui::Panel::top("title_bar").exact_size(TITLE_BAR_H).frame(egui::Frame::NONE.fill(t.window)).show(ui, |ui| {

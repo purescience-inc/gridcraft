@@ -8,7 +8,8 @@ use serde_json::json;
 
 use crate::SheetApp;
 use crate::icons::{self, Icon};
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 /// The rename field asks for focus only while it has not got it yet. Asking again on the frame it lost focus (Enter or a click elsewhere)
 /// would keep the field focused after it is closed, so the keyboard stayed stuck in the sheet name.

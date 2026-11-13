@@ -46,7 +46,7 @@ pub(super) fn keytip(app: &SheetApp, ui: &Ui, sequence: &str, at: egui::Pos2) {
 }
 
 /// Paint the badge for a control that runs command `id`, when the armed prefix matches.
-pub(super) fn control_keytip(app: &SheetApp, ui: &Ui, response: &egui::Response, id: &str) {
+pub(crate) fn control_keytip(app: &SheetApp, ui: &Ui, response: &egui::Response, id: &str) {
     if let Some(sequence) = keytip_table::control_badge(app.keytips.prefix().unwrap_or_default(), id) {
         keytip(app, ui, sequence, response.rect.center_bottom());
     }

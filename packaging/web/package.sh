@@ -40,6 +40,15 @@ cp -R "$SITE/." "$WORK/$NAME/"
 cp "$HERE/_headers" "$HERE/.htaccess" "$WORK/$NAME/"
 cp "$HERE/README.md" "$WORK/$NAME/HOSTING.md"
 copy_docs "$WORK/$NAME"
+# The Pure edition embeds Inter (crates/ui-egui/src/pure.rs): its licence goes with the build.
+# Its page also names itself while the app loads (the packaged copy only; the source page is
+# upstream's).
+if [[ " ${CRAFT_WEB_FEATURES:-} " == *" pure "* ]]; then
+  cp "$ROOT/assets/fonts/OFL-Inter.txt" "$WORK/$NAME/"
+  sed -i.bak -e 's|<title>GridCraft</title>|<title>PureSheets</title>|' -e 's|Loading GridCraft|Loading PureSheets|' \
+    -e 's|background: #f3f3f3|background: #f7f8f9|' "$WORK/$NAME/index.html"
+  rm -f "$WORK/$NAME/index.html.bak"
+fi
 rm -f "$DIST/$NAME.zip"
 (cd "$WORK" && zip -qr9 "$DIST/$NAME.zip" "$NAME")
 echo "wrote $DIST/$NAME.zip"
