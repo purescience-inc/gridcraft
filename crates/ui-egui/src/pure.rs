@@ -392,3 +392,121 @@ impl crate::SheetApp {
         share(&name);
     }
 }
+
+// ---------------------------------------------------------------- dialogs
+
+/// A dialog's header: the title at the leading edge, a close button at the far edge, one rule
+/// under them. Upstream's title bar centres the title in a grey band.
+pub const DIALOG_HEADER: f32 = 44.0;
+
+/// The space around a dialog's content.
+pub const DIALOG_MARGIN: i8 = 16;
+
+/// A dialog's OK and Cancel buttons at their least.
+pub const DIALOG_BUTTON: egui::Vec2 = egui::vec2(76.0, 28.0);
+
+/// A dialog's frame in the Pure edition: white (the popup colour in dark), one line, 3px corners,
+/// its margin, and room at the top for the header [`dialog_header`] paints after it is shown.
+pub fn dialog_frame(style: &egui::Style) -> egui::Frame {
+    let m = DIALOG_MARGIN;
+    egui::Frame::window(style).fill(paper(style.visuals.dark_mode).popup).inner_margin(egui::Margin { left: m, right: m, top: DIALOG_HEADER as i8 + 12, bottom: m })
+}
+
+/// Inside a dialog's body: 24px control rows on the 4px step, and room between them.
+pub fn dialog_spacing(ui: &mut egui::Ui) {
+    let s = ui.spacing_mut();
+    s.interact_size.y = CONTROL_H;
+    s.item_spacing = egui::vec2(8.0, 6.0);
+    s.button_padding = egui::vec2(10.0, 4.0);
+}
+
+/// Paints the header of the dialog `window` (the response its `Window::show` returned) on its
+/// layer and handles its close button. True when the close button was pressed.
+pub fn dialog_header(ctx: &egui::Context, window: &egui::Response, title: &str) -> bool {
+    let p = paper(ctx.global_style().visuals.dark_mode);
+    let rtl = ctx.global_style().right_to_left;
+    let stroke = ctx.global_style().visuals.window_stroke.width;
+    let rect = egui::Rect::from_min_size(window.rect.min + egui::vec2(stroke, stroke), egui::vec2(window.rect.width() - 2.0 * stroke, DIALOG_HEADER));
+    let id = window.layer_id.id.with("pure_dialog_header");
+    let ui = egui::Ui::new(ctx.clone(), id, egui::UiBuilder::new().layer_id(window.layer_id).max_rect(rect));
+    let painter = ctx.layer_painter(window.layer_id);
+    let galley = painter.layout_no_wrap(title.to_string(), crate::theme::ui_bold(TYPE_TITLE), p.text);
+    let inset = f32::from(DIALOG_MARGIN);
+    let x = if rtl { rect.max.x - inset - galley.size().x } else { rect.min.x + inset };
+    painter.galley(egui::pos2(x, rect.center().y - galley.size().y / 2.0), galley, p.text);
+    let side = 28.0;
+    let cx = if rtl { rect.min.x + 8.0 + side / 2.0 } else { rect.max.x - 8.0 - side / 2.0 };
+    let close = egui::Rect::from_center_size(egui::pos2(cx, rect.center().y), egui::vec2(side, side));
+    let r = ui.interact(close, id.with("close"), egui::Sense::click());
+    r.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, "Close"));
+    let r = r.on_hover_text("Close");
+    let corner = egui::CornerRadius::same(RADIUS as u8);
+    if r.is_pointer_button_down_on() {
+        painter.rect_filled(close, corner, p.pressed);
+    } else if r.hovered() {
+        painter.rect_filled(close, corner, p.hover);
+    }
+    let c = egui::pos2(painter.round_to_pixel_center(close.center().x), painter.round_to_pixel_center(close.center().y));
+    let s = Stroke::new(1.25, if r.hovered() { p.text } else { p.text_2 });
+    let g = 5.0;
+    painter.line_segment([c + egui::vec2(-g, -g), c + egui::vec2(g, g)], s);
+    painter.line_segment([c + egui::vec2(-g, g), c + egui::vec2(g, -g)], s);
+    let y = painter.round_to_pixel_center(rect.max.y - 0.5);
+    painter.line_segment([egui::pos2(rect.min.x, y), egui::pos2(rect.max.x, y)], Stroke::new(1.0, p.rule));
+    r.clicked()
+}
+
+/// Before a dialog's OK and Cancel: room, and one rule the full width of the dialog.
+pub fn dialog_footer_rule(ui: &mut egui::Ui) {
+    let p = paper(ui.visuals().dark_mode);
+    ui.add_space(12.0);
+    let inset = f32::from(DIALOG_MARGIN);
+    let r = ui.max_rect();
+    let y = ui.painter().round_to_pixel_center(ui.cursor().min.y);
+    ui.painter().line_segment([egui::pos2(r.min.x - inset, y), egui::pos2(r.max.x + inset, y)], Stroke::new(1.0, p.rule));
+    ui.add_space(12.0);
+}
+
+/// A row of tabs in a dialog: 13px labels, the chosen one in the text colour, bold, on a 2px accent
+/// rule; the others in the secondary colour with a quiet fill under the pointer; one rule under the
+/// row. Upstream shows them as selectable chips. Returns the tab clicked.
+pub fn dialog_tabs(ui: &mut egui::Ui, labels: &[&str], selected: usize) -> Option<usize> {
+    const H: f32 = 30.0;
+    const PAD: f32 = 12.0;
+    let p = paper(ui.visuals().dark_mode);
+    let font = |on: bool| if on { crate::theme::ui_bold(TYPE_TAB) } else { crate::theme::ui_font(TYPE_TAB) };
+    let need: f32 = labels.iter().map(|l| ui.painter().layout_no_wrap(l.to_string(), font(true), p.text).size().x + 2.0 * PAD).sum();
+    ui.set_min_width(need);
+    let origin = ui.cursor().min;
+    let width = ui.available_width();
+    let rtl = ui.style().right_to_left;
+    let mut x = if rtl { origin.x + width } else { origin.x };
+    let mut clicked = None;
+    for (i, label) in labels.iter().enumerate() {
+        let on = i == selected;
+        let w = ui.painter().layout_no_wrap(label.to_string(), font(true), p.text).size().x + 2.0 * PAD;
+        let left = if rtl { x - w } else { x };
+        let r = egui::Rect::from_min_size(egui::pos2(left, origin.y), egui::vec2(w, H));
+        let resp = ui.interact(r, ui.id().with(("pure_dialog_tab", i)), egui::Sense::click());
+        resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, on, *label));
+        let painter = ui.painter();
+        if !on && resp.hovered() {
+            painter.rect_filled(r.shrink2(egui::vec2(0.0, 3.0)), egui::CornerRadius::same(RADIUS as u8), p.hover);
+        }
+        let ink = if on || resp.hovered() { p.text } else { p.text_2 };
+        let galley = painter.layout_no_wrap(label.to_string(), font(on), ink);
+        painter.galley(egui::pos2(r.center().x - galley.size().x / 2.0, r.center().y - galley.size().y / 2.0 - 1.0), galley, ink);
+        if on {
+            painter.rect_filled(egui::Rect::from_min_max(egui::pos2(r.min.x + 4.0, r.max.y - 2.0), egui::pos2(r.max.x - 4.0, r.max.y)), 0.0, p.accent);
+        }
+        if resp.clicked() && !on {
+            clicked = Some(i);
+        }
+        x += if rtl { -w } else { w };
+    }
+    ui.allocate_space(egui::vec2(width, H));
+    let y = ui.painter().round_to_pixel_center(origin.y + H - 0.5);
+    ui.painter().line_segment([egui::pos2(origin.x, y), egui::pos2(origin.x + width, y)], Stroke::new(1.0, p.rule));
+    ui.add_space(4.0);
+    clicked
+}

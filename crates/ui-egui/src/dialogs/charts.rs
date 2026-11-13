@@ -58,8 +58,15 @@ fn chart_icon(t: &str) -> Icon {
 }
 
 pub(super) fn recommended_charts(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confirm: &mut bool, open: &mut bool) {
+    let tabs = ["Recommended Charts", "All Charts"];
+    if crate::pure::ON {
+        if let Some(k) = crate::pure::dialog_tabs(ui, &tabs, tabs.iter().position(|t| d.tab == *t).unwrap_or(0)) {
+            d.tab = tabs[k].to_string();
+            select_chart(d, 0);
+        }
+    } else {
     ui.horizontal(|ui| {
-        for tab in ["Recommended Charts", "All Charts"] {
+        for tab in tabs {
             if ui.selectable_label(d.tab == tab, tab).clicked() && d.tab != tab {
                 d.tab = tab.to_string();
                 select_chart(d, 0);
@@ -67,6 +74,7 @@ pub(super) fn recommended_charts(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut 
         }
     });
     ui.separator();
+    }
     let choices = chart_choices(d);
     let t = crate::theme::Tokens::get(ui.ctx());
     ui.horizontal_top(|ui| {

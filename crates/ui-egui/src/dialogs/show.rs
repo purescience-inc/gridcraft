@@ -160,7 +160,8 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         _ => 380.0,
     };
     let window_id = egui::Id::unique("dialog").with(&d.name);
-    let window = egui::Window::new(app.ui.language.tr(crate::pure::app_name(&d.title)))
+    let shown_title = app.ui.language.tr(crate::pure::app_name(&d.title)).to_string();
+    let window = egui::Window::new(shown_title.clone())
         .id(window_id)
         .collapsible(false)
         .resizable(false)
@@ -169,6 +170,8 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         .pivot(egui::Align2::CENTER_CENTER)
         .default_pos(ctx.content_rect().center() + vec2(0.0, -40.0))
         .open(&mut win_open);
+    // Pure edition: no egui title bar; the header is painted into the frame's top margin below.
+    let window = if crate::pure::ON { window.title_bar(false).frame(crate::pure::dialog_frame(&ctx.global_style())) } else { window };
     let window = match d.name.as_str() {
         "insertPicture" => window.default_height(240.0),
         "advancedFilter" => window.default_height(0.0),
@@ -176,6 +179,9 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
     };
     let (window, collapsed) = place_window(app, ctx, &mut d, window, window_id);
     let shown = window.show(ctx, |ui| {
+            if crate::pure::ON {
+                crate::pure::dialog_spacing(ui);
+            }
             if let Some(key) = &collapsed {
                 let title = d.title.clone();
                 ref_edit(app, ui, &mut d, key, RefLabel::Named(&title), (width - 40.0).min(380.0));
@@ -380,6 +386,12 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
                 _ => form(app, ui, &mut d, &mut confirm, &mut open),
             }
         });
+    let mut header_closed = false;
+    if crate::pure::ON
+        && let Some(s) = &shown
+    {
+        header_closed = crate::pure::dialog_header(ctx, &s.response, &shown_title);
+    }
     window_shown(ctx, &mut d, collapsed.is_some(), shown.map(|r| r.response.rect));
     // Hyperlinks inside dialogs (About ▸ Contributors) open through the host's `open_url`, since
     // the native shell has no browser integration of its own.
@@ -399,7 +411,7 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
             open_url(&u);
         }
     }
-    if ctx.input(|i| i.key_pressed(Key::Escape)) || !win_open {
+    if ctx.input(|i| i.key_pressed(Key::Escape)) || !win_open || header_closed {
         // In Solver Options, Escape (or closing the window) cancels the options only.
         if in_solver_options(&d) {
             cancel_solver_options(&mut d);
@@ -523,18 +535,27 @@ pub(super) fn open_confirmed_link(app: &mut SheetApp, d: &Dialog) -> Result<(), 
 }
 
 pub(super) fn ok_cancel(ui: &mut egui::Ui, confirm: &mut bool, open: &mut bool) {
+    if crate::pure::ON {
+        crate::pure::dialog_footer_rule(ui);
+    } else {
     ui.add_space(8.0);
+    }
     // A row as tall as the buttons: a right-to-left layout straight in the window takes all the
     // height it is offered, which stretched every form dialog to the screen's height.
     ui.horizontal(|ui| {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let lang = crate::i18n::current(ui.ctx());
             let t = crate::theme::Tokens::get(ui.ctx());
-            let ok = ui.add(egui::Button::new(egui::RichText::new(format!("   {}   ", lang.tr("OK"))).color(t.on_accent)).fill(t.accent));
+            let ok = if crate::pure::ON {
+                ui.add(egui::Button::new(egui::RichText::new(lang.tr("OK")).color(t.on_accent)).fill(t.accent).stroke(egui::Stroke::NONE).min_size(crate::pure::DIALOG_BUTTON))
+            } else {
+            ui.add(egui::Button::new(egui::RichText::new(format!("   {}   ", lang.tr("OK"))).color(t.on_accent)).fill(t.accent))
+            };
             if ok.clicked() || ui.input(|i| i.key_pressed(Key::Enter)) {
                 *confirm = true;
             }
-            if ui.button(format!(" {} ", lang.tr("Cancel"))).clicked() {
+            let cancel = if crate::pure::ON { ui.add(egui::Button::new(lang.tr("Cancel")).min_size(crate::pure::DIALOG_BUTTON)) } else { ui.button(format!(" {} ", lang.tr("Cancel"))) };
+            if cancel.clicked() {
                 *open = false;
             }
         })

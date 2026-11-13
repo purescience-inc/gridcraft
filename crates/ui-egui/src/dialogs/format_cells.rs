@@ -7,21 +7,30 @@ pub(super) fn format_cells(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog
     // labels are translated. The Fill tab is keyed by context: the Alignment tab's "Fill" is a
     // different word in some languages.
     let lang = app.ui.language;
+    let tabs = [
+        ("Number", "Number"),
+        ("Alignment", "Alignment"),
+        ("Font", "Font"),
+        ("Border", "Border"),
+        ("Fill", "Format Cells|Fill"),
+        ("Protection", "Protection"),
+    ];
+    if crate::pure::ON {
+        let labels: Vec<&str> = tabs.iter().map(|(_, key)| lang.tr(key)).collect();
+        let chosen = tabs.iter().position(|(tab, _)| d.tab == *tab).unwrap_or(0);
+        if let Some(k) = crate::pure::dialog_tabs(ui, &labels, chosen) {
+            d.tab = tabs[k].0.to_string();
+        }
+    } else {
     ui.horizontal(|ui| {
-        for (tab, key) in [
-            ("Number", "Number"),
-            ("Alignment", "Alignment"),
-            ("Font", "Font"),
-            ("Border", "Border"),
-            ("Fill", "Format Cells|Fill"),
-            ("Protection", "Protection"),
-        ] {
+        for (tab, key) in tabs {
             if ui.selectable_label(d.tab == tab, lang.tr(key)).clicked() {
                 d.tab = tab.to_string();
             }
         }
     });
     ui.separator();
+    }
     let mut st: gridcraft_engine::model::Style = d.values.get("style").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
     let sample = app.session.active().and_then(|doc| doc.wb.active().map(|s| s.value(doc.selection.active))).unwrap_or_default();
     match d.tab.as_str() {
