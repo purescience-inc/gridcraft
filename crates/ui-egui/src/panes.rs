@@ -6,7 +6,8 @@ use serde_json::{Value as Json, json};
 use gridcraft_engine::model::{ObjKind, ObjRef};
 
 use crate::SheetApp;
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 pub fn show(app: &mut SheetApp, ui: &mut Ui) {
     // The Comments pane is engine state (`review.showComments`, so agents can drive it); the other

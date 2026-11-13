@@ -75,15 +75,22 @@ pub(super) fn automate(app: &mut SheetApp, ui: &mut Ui) {
     if __k.clicked() {
         app.open_dialog("commandSearch", json!({}));
     }
-    let __k = big_button(ui, Icon::Script, "Agent\nControl", "How agents drive GridCraft (MCP / control channel)", false);
-    control_keytip(app, ui, &__k, "agents");
-    if __k.clicked() {
-        app.open_dialog("agents", json!({}));
+    // Pure edition: no Agent Control (it describes the desktop app's control channel and CLI).
+    if !crate::pure::ON {
+        let __k = big_button(ui, Icon::Script, "Agent\nControl", "How agents drive GridCraft (MCP / control channel)", false);
+        control_keytip(app, ui, &__k, "agents");
+        if __k.clicked() {
+            app.open_dialog("agents", json!({}));
+        }
     }
     let __k = big_button(ui, Icon::Script, "Action\nJournal", "Every command run in this session (replayable)", false);
     control_keytip(app, ui, &__k, "journal");
     if __k.clicked() {
         app.open_dialog("journal", json!({}));
+    }
+    // Pure edition: no update check (the host brings updates), and About is on the File screen.
+    if crate::pure::ON {
+        return;
     }
     let __k = big_button(ui, Icon::Script, "Check for\nUpdates…", "Look for a newer GridCraft release", false);
     control_keytip(app, ui, &__k, "checkForUpdates");

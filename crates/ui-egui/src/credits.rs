@@ -260,7 +260,7 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
                     if i > 0 {
                         ui.label(RichText::new("·").weak());
                     }
-                    ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login)).on_hover_text(c.summary());
+                    crate::pure::credit(ui, c.name(v.names), format!("https://github.com/{}", c.login)).on_hover_text(c.summary());
                 }
             });
         });
@@ -399,7 +399,7 @@ fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View) {
             for (c, cells) in list.iter().zip(rows) {
                 body.row(h, |mut row| {
                     row.col(|ui| {
-                        aligned(ui, false, |ui| ui.hyperlink_to(c.name(v.names), format!("https://github.com/{}", c.login)))
+                        aligned(ui, false, |ui| crate::pure::credit(ui, c.name(v.names), format!("https://github.com/{}", c.login)))
                             .on_hover_text(c.summary());
                     });
                     for text in cells {

@@ -160,7 +160,7 @@ pub fn show(app: &mut SheetApp, ctx: &egui::Context) {
         _ => 380.0,
     };
     let window_id = egui::Id::unique("dialog").with(&d.name);
-    let window = egui::Window::new(app.ui.language.tr(&d.title))
+    let window = egui::Window::new(app.ui.language.tr(crate::pure::app_name(&d.title)))
         .id(window_id)
         .collapsible(false)
         .resizable(false)

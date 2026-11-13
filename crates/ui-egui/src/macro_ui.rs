@@ -9,7 +9,8 @@ use serde_json::{Value as Json, json};
 
 use crate::SheetApp;
 use crate::dialogs::Dialog;
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 /// Shortcut rules live in the engine, so the dialogs and `macro.record` agree.
 pub use gridcraft_engine::macros::{RESERVED_SHORTCUTS, parse_shortcut, shortcut_conflict, shortcut_text};
@@ -507,7 +508,8 @@ pub fn macros_dialog(app: &mut SheetApp, ui: &mut Ui, d: &mut Dialog, open: &mut
     if vba {
         ui.add_space(6.0);
         ui.label(
-            egui::RichText::new("This workbook also has a VBA project. GridCraft keeps it when you save but does not run it.").color(t.text_dim),
+            egui::RichText::new(crate::pure::rename("This workbook also has a VBA project. GridCraft keeps it when you save but does not run it."))
+                .color(t.text_dim),
         );
     }
     d.values.insert("name".into(), json!(name));

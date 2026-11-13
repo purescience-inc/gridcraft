@@ -14,6 +14,7 @@ pub(super) fn about(ui: &mut egui::Ui, d: &mut Dialog) {
     match d.tab.as_str() {
         "Contributors" => crate::credits::contributors_ui(ui),
         "Models" => crate::credits::models_ui(ui),
+        _ if crate::pure::ON => crate::pure::backstage::about_dialog(ui),
         _ => {
             ui.heading("GridCraft");
             ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));

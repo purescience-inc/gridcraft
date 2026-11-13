@@ -4,7 +4,8 @@ use egui::{Align2, Color32, Rect, Response, Sense, Stroke, StrokeKind, Ui, pos2,
 use gridcraft_engine::model::{BorderStyle, Borders, Theme};
 
 use crate::grid::paint_border;
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 /// A labelled menu button with a two-by-two diagram to distinguish inside edges
 /// from the selection outline. Labels stay available to accessibility tools.

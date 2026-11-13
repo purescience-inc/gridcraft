@@ -7,7 +7,8 @@ use serde_json::{Value as Json, json};
 
 use crate::SheetApp;
 use crate::i18n;
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 /// Whether the active cell is inside a pivot report (so the pane should show).
 pub fn active_pivot(app: &SheetApp) -> Option<String> {

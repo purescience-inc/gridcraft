@@ -8,7 +8,8 @@ use crate::SheetApp;
 use crate::code_editor::{self, FieldOptions, Lang};
 use crate::editor::formula_refs;
 use crate::icons::{self, Icon};
-use crate::theme::{self, Tokens};
+use crate::pure::chrome as theme;
+use crate::theme::Tokens;
 
 /// Lines the formula bar (and the in-cell editor) grows to before it scrolls.
 pub const MAX_LINES: usize = 5;

@@ -1009,7 +1009,7 @@ impl Dialog {
             "commandSearch" => Dialog::custom("commandSearch", "Search Commands", json!({})),
             "agents" => Dialog::custom("agents", "Agent Control", json!({})),
             "about" => {
-                let mut d = Dialog::custom("about", "About GridCraft", json!({}));
+                let mut d = Dialog::custom("about", crate::pure::about_title("About GridCraft"), json!({}));
                 d.tab = match p("tab").as_str() {
                     Some(t @ ("Contributors" | "Models")) => t.to_string(),
                     _ => "About".into(),
